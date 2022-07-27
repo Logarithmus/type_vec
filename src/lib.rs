@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use typenum::{Min, Minimum};
 
 pub struct TypeVec<Rest, Last>(PhantomData<(Rest, Last)>);
 
@@ -17,7 +18,7 @@ impl<T> Same<T> for T {}
 
 type A = (((), i8), u128);
 type B = ((((), u8), u16), u32);
-type C = Push<Pop<Pop<A>>, f32>;
+type C = ArrayMinimum<A, B>;
 
 fn sample<T: Same<()>>() {}
 
@@ -52,7 +53,7 @@ impl<L, R> PopTrait for (L, R) {
     type Output = L;
 }
 
-type Pop<T> = <T as PopTrait>::Output;
+pub type Pop<T> = <T as PopTrait>::Output;
 
 pub trait PushTrait<R> {
     type Output;
@@ -63,6 +64,24 @@ impl<L, R> PushTrait<R> for L {
 }
 
 type Push<L, R> = <L as PushTrait<R>>::Output;
+
+pub trait ArrayMin<Last = ()> {
+    type Output;
+}
+
+pub type ArrayMinimum<L, R = ()> = <L as ArrayMin<R>>::Output;
+
+impl<Rest, PreLast, Last> ArrayMin<Last> for (Rest, PreLast)
+where
+    Rest: ArrayMin<PreLast>,
+    ArrayMinimum<Rest, PreLast>: Min<Last>,
+{
+    type Output = Minimum<ArrayMinimum<Rest, PreLast>, Last>;
+}
+
+impl<R> ArrayMin<R> for () {
+    type Output = R;
+}
 
 #[cfg(test)]
 mod tests {
