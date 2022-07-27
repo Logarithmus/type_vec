@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use typenum::{Min, Minimum};
+use typenum::{consts::*, Max, Maximum, Min, Minimum};
 
 pub struct TypeVec<Rest, Last>(PhantomData<(Rest, Last)>);
 
@@ -16,14 +16,14 @@ pub trait Same<R> {}
 
 impl<T> Same<T> for T {}
 
-type A = (((), i8), u128);
-type B = ((((), u8), u16), u32);
-type C = ArrayMinimum<A, B>;
+type A = ((((((), P3), N1), N2), Z0), P10);
+type C = ArrayMinimum<A>;
+type D = ArrayMaximum<A>;
 
 fn sample<T: Same<()>>() {}
 
 fn sample2() {
-    sample::<C>();
+    sample::<D>();
 }
 
 // impl<RestL, LastL, RestR, LastR> Concatenate<(RestR, LastR)> for (RestL, LastL) {
@@ -65,28 +65,66 @@ impl<L, R> PushTrait<R> for L {
 
 type Push<L, R> = <L as PushTrait<R>>::Output;
 
-pub trait ArrayMin<Last = ()> {
+/// Minimum between an array and a single element
+pub trait ArrayValueMin<Value> {
     type Output;
 }
 
-pub type ArrayMinimum<L, R = ()> = <L as ArrayMin<R>>::Output;
+pub type ArrayValueMinimum<Array, Value> = <Array as ArrayValueMin<Value>>::Output;
 
-impl<Rest, PreLast, Last> ArrayMin<Last> for (Rest, PreLast)
+impl<Rest, Last, Value> ArrayValueMin<Value> for (Rest, Last)
 where
-    Rest: ArrayMin<PreLast>,
-    ArrayMinimum<Rest, PreLast>: Min<Last>,
+    Rest: ArrayValueMin<Last>,
+    ArrayValueMinimum<Rest, Last>: Min<Value>,
 {
-    type Output = Minimum<ArrayMinimum<Rest, PreLast>, Last>;
+    type Output = Minimum<ArrayValueMinimum<Rest, Last>, Value>;
 }
 
-impl<R> ArrayMin<R> for () {
+impl<R> ArrayValueMin<R> for () {
     type Output = R;
+}
+
+pub trait ArrayMin {
+    type Output;
+}
+
+pub type ArrayMinimum<Array> = <Array as ArrayMin>::Output;
+
+impl<Rest: ArrayValueMin<Last>, Last> ArrayMin for (Rest, Last) {
+    type Output = ArrayValueMinimum<Rest, Last>;
+}
+
+/// Minimum between an array and a single element
+pub trait ArrayValueMax<Value> {
+    type Output;
+}
+
+pub type ArrayValueMaximum<Array, Value> = <Array as ArrayValueMax<Value>>::Output;
+
+impl<Rest, Last, Value> ArrayValueMax<Value> for (Rest, Last)
+where
+    Rest: ArrayValueMax<Last>,
+    ArrayValueMaximum<Rest, Last>: Max<Value>,
+{
+    type Output = Maximum<ArrayValueMaximum<Rest, Last>, Value>;
+}
+
+impl<R> ArrayValueMax<R> for () {
+    type Output = R;
+}
+
+pub trait ArrayMax {
+    type Output;
+}
+
+pub type ArrayMaximum<Array> = <Array as ArrayMax>::Output;
+
+impl<Rest: ArrayValueMax<Last>, Last> ArrayMax for (Rest, Last) {
+    type Output = ArrayValueMaximum<Rest, Last>;
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{sample, C};
-
     #[test]
     fn it_works() {
         let result = 2 + 2;
