@@ -28,7 +28,6 @@ use typenum::{
 };
 use typenum_alias::{consts::*, operator_aliases::*, type_operators::*, Const};
 
-#[rustfmt::skip]
 type A = typenum_list![5, 3, -2, 1, 2, 1, 2, 3, 4];
 type B = MergeSorted<A>;
 
@@ -41,13 +40,13 @@ fn sample_text() {
     same::<B>();
 }
 
-trait Concatenate<R> {
+pub trait Concatenate<R> {
     type Output;
 }
 
-type Concat<L, R> = <L as Concatenate<R>>::Output;
+pub type Concat<L, R> = <L as Concatenate<R>>::Output;
 
-trait Same<R> {}
+pub trait Same<R> {}
 
 impl<T> Same<T> for T {}
 
@@ -67,7 +66,7 @@ where
     type Output = (Concat<(LeftRest, LeftLast), RightRest>, RightLast);
 }
 
-trait PopTrait {
+pub trait PopTrait {
     type Output;
 }
 
@@ -75,9 +74,9 @@ impl<L, R> PopTrait for (L, R) {
     type Output = L;
 }
 
-type Pop<T> = <T as PopTrait>::Output;
+pub type Pop<T> = <T as PopTrait>::Output;
 
-trait PushTrait<R> {
+pub trait PushTrait<R> {
     type Output;
 }
 
@@ -85,14 +84,14 @@ impl<L, R> PushTrait<R> for L {
     type Output = (L, R);
 }
 
-type Push<L, R> = <L as PushTrait<R>>::Output;
+pub type Push<L, R> = <L as PushTrait<R>>::Output;
 
 /// Minimum between an array and a single element
-trait ArrayValueMin<Value> {
+pub trait ArrayValueMin<Value> {
     type Output;
 }
 
-type ArrayValueMinimum<Array, Value> = <Array as ArrayValueMin<Value>>::Output;
+pub type ArrayValueMinimum<Array, Value> = <Array as ArrayValueMin<Value>>::Output;
 
 impl<Rest, Last, Value> ArrayValueMin<Value> for (Rest, Last)
 where
@@ -106,22 +105,22 @@ impl<R> ArrayValueMin<R> for () {
     type Output = R;
 }
 
-trait ArrayMin {
+pub trait ArrayMin {
     type Output;
 }
 
-type ArrayMinimum<Array> = <Array as ArrayMin>::Output;
+pub type ArrayMinimum<Array> = <Array as ArrayMin>::Output;
 
 impl<Rest: ArrayValueMin<Last>, Last> ArrayMin for (Rest, Last) {
     type Output = ArrayValueMinimum<Rest, Last>;
 }
 
 /// Minimum between an array and a single element
-trait ArrayValueMax<Value> {
+pub trait ArrayValueMax<Value> {
     type Output;
 }
 
-type ArrayValueMaximum<Array, Value> = <Array as ArrayValueMax<Value>>::Output;
+pub type ArrayValueMaximum<Array, Value> = <Array as ArrayValueMax<Value>>::Output;
 
 impl<Rest, Last, Value> ArrayValueMax<Value> for (Rest, Last)
 where
@@ -135,11 +134,11 @@ impl<R> ArrayValueMax<R> for () {
     type Output = R;
 }
 
-trait ArrayMax {
+pub trait ArrayMax {
     type Output;
 }
 
-type ArrayMaximum<Array> = <Array as ArrayMax>::Output;
+pub type ArrayMaximum<Array> = <Array as ArrayMax>::Output;
 
 impl<Rest: ArrayValueMax<Last>, Last> ArrayMax for (Rest, Last) {
     type Output = ArrayValueMaximum<Rest, Last>;
@@ -147,13 +146,13 @@ impl<Rest: ArrayValueMax<Last>, Last> ArrayMax for (Rest, Last) {
 
 /////////////////////////////////////////////////
 
-trait Pair {
+pub trait Pair {
     type Left;
     type Right;
 }
 
-type PairL<T> = <T as Pair>::Left;
-type PairR<T> = <T as Pair>::Right;
+pub type PairL<T> = <T as Pair>::Left;
+pub type PairR<T> = <T as Pair>::Right;
 
 impl<L, R> Pair for (L, R) {
     type Left = L;
@@ -162,14 +161,14 @@ impl<L, R> Pair for (L, R) {
 
 /////////////////////////////////////////////////
 
-trait MergeSort {
+pub trait MergeSort {
     type Split: Pair;
     type Left;
     type Right;
     type Output;
 }
 
-type MergeSorted<T> = <T as MergeSort>::Output;
+pub type MergeSorted<T> = <T as MergeSort>::Output;
 
 impl MergeSort for () {
     type Split = ((), ());
@@ -213,11 +212,11 @@ where
     type Output = Merged<MergeSorted<Self::Left>, MergeSorted<Self::Right>>;
 }
 
-trait Merge<Rhs> {
+pub trait Merge<Rhs> {
     type Output;
 }
 
-type Merged<L, R> = <L as Merge<R>>::Output;
+pub type Merged<L, R> = <L as Merge<R>>::Output;
 
 impl<Rest, Last> Merge<()> for (Rest, Last) {
     type Output = Self;
@@ -238,11 +237,11 @@ where
         CompareSwap<((LeftRest, LeftLast), (RightRest, RightLast)), Gr<LeftLast, RightLast>>;
 }
 
-trait CmpSwap<IsGreater: Bit> {
+pub trait CmpSwap<IsGreater: Bit> {
     type Output;
 }
 
-type CompareSwap<Array, Flag> = <Array as CmpSwap<Flag>>::Output;
+pub type CompareSwap<Array, Flag> = <Array as CmpSwap<Flag>>::Output;
 
 impl<LeftRest, LeftLast, Right> CmpSwap<B1> for ((LeftRest, LeftLast), Right)
 where
@@ -271,13 +270,13 @@ fn merge(left: &[i8], right: &[i8]) -> Vec<i8> {
     }
 }
 
-trait SplitInner<Buf, Mid> {
+pub trait SplitInner<Buf, Mid> {
     type Output: Pair;
 }
 
-type Split<Array, Mid> = <Array as SplitInner<(), Diff<Len<Array>, Mid>>>::Output;
+pub type Split<Array, Mid> = <Array as SplitInner<(), Diff<Len<Array>, Mid>>>::Output;
 
-type SplitHalf<Array> = <Array as SplitInner<(), Quot<Len<Array>, P2>>>::Output;
+pub type SplitHalf<Array> = <Array as SplitInner<(), Quot<Len<Array>, P2>>>::Output;
 
 impl<Array, Buf: Inverse<()>> SplitInner<Buf, Z0> for Array {
     type Output = (Array, Mirror<Buf>);
@@ -291,11 +290,11 @@ where
     type Output = <Rest as SplitInner<Push<Buf, Last>, Diff<PInt<Mid>, P1>>>::Output;
 }
 
-trait Inverse<Buf> {
+pub trait Inverse<Buf> {
     type Output;
 }
 
-type Mirror<Array> = <Array as Inverse<()>>::Output;
+pub type Mirror<Array> = <Array as Inverse<()>>::Output;
 
 impl<Buf> Inverse<Buf> for () {
     type Output = Buf;
@@ -305,11 +304,11 @@ impl<Rest: Inverse<(Buf, Last)>, Last, Buf> Inverse<Buf> for (Rest, Last) {
     type Output = <Rest as Inverse<Push<Buf, Last>>>::Output;
 }
 
-trait Length {
+pub trait Length {
     type Output;
 }
 
-type Len<Array> = <Array as Length>::Output;
+pub type Len<Array> = <Array as Length>::Output;
 
 impl Length for () {
     type Output = Z0;
