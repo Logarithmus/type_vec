@@ -1,8 +1,7 @@
 [package]
-name = "type_vec"
+name = "typelist"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-const-default = "1.0.0"
 typenum = "1.15.0"
