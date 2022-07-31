@@ -1,5 +1,5 @@
 # typelist
-Type-level singly linked list.
+Type-level sortable singly linked list
 
 Because Rust lacks variadic generics, the list is implemented as a recursively nested tuple,
 like this:
