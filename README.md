@@ -19,5 +19,4 @@ type List2 = TArr<TArr<TArr<ATerm, Const<1>>, Const<2>>, Const<3>>;
 - [x] concatenation
 - [x] push
 - [x] pop
-- [ ] `typenum_list![..]` macro for `typenum_alias::Const<N>` list construction
-      (TODO: fix reversed order)
+- [x] `typenum_list![..]` macro for `typenum_alias::Const<N>` list construction

@@ -13,14 +13,13 @@
 //! ```
 //!
 //! ### Features
-//! - [x] merge sort
-//! - [x] minimum
-//! - [x] maximum
-//! - [x] concatenation
-//! - [x] push
-//! - [x] pop
-//! - [ ] `typenum_list![..]` macro for `typenum_alias::Const<N>` list construction
-//!       (TODO: fix reversed order)
+//! - merge sort
+//! - minimum
+//! - maximum
+//! - concatenation
+//! - push
+//! - pop
+//! - `typenum_list![..]` macro for `typenum_alias::Const<N>` list construction
 
 use std::ops::{Add, Div};
 use typenum::{
@@ -30,7 +29,7 @@ use typenum::{
 use typenum_alias::{consts::*, operator_aliases::*, type_operators::*, Const};
 
 #[rustfmt::skip]
-type A = typenum_alias_list![5, 3, -2, 1, 2, 1, 2, 3, 4];
+type A = typenum_list![5, 3, -2, 1, 2, 1, 2, 3, 4];
 type B = MergeSorted<A>;
 
 fn same<T: Same<()>>() {}
@@ -38,6 +37,7 @@ fn same<T: Same<()>>() {}
 fn sample_text() {
     // this deliberately fails to compile
     // to see the type of `B` in compilation errors
+    same::<A>();
     same::<B>();
 }
 
@@ -322,34 +322,53 @@ where
     type Output = Sum<Len<Rest>, P1>;
 }
 
-macro_rules! typenum_alias_list {
-    ($num:literal) => {
-        ((), Const<$num>)
-    };
-    ($($array:literal),+) => {
-        typenum_alias_list!($($array)+)
-    };
-    ($first:literal $($rest:literal)*) => {
-        (typenum_alias_list!($($rest)*), Const<$first>)
-    };
+#[macro_export]
+macro_rules! typelist {
     () => {
         ()
     };
+    ($n:ty) => {
+        ((), $n)
+    };
+    ($n:ty,) => {
+        ((), $n)
+    };
+    ($n:ty, $($tail:ty),+) => {
+        (typelist![$($tail),+], $n)
+    };
+    ($n:ty, $($tail:ty),+,) => {
+        (typelist![$($tail),+], $n)
+    };
 }
 
-macro_rules! _reverse {
-    ($($array:literal),*) => {
-        reverse!([] $($array)*)
-    };
-    ([$($reversed:literal)*]) => {
-        [$($reversed),*]
-    };
-    ([$($reversed:literal)*] $first:literal $($array:literal)*) => {
-        reverse!([$first $($reversed)*] $($array)*)
+#[macro_export]
+macro_rules! typenum_list {
+    ($($num:literal),+) => {
+        apply_args_reverse!(typenum_list_inner, $($num),+)
     };
 }
 
-use typenum_alias_list;
+macro_rules! typenum_list_inner {
+    ($($num:literal),+) => {
+        typelist![$(Const<$num>),+]
+    };
+}
+
+macro_rules! apply_args_reverse {
+    ($macro_id:tt [] $($reversed:tt)*) => {
+        $macro_id!($($reversed) *)
+    };
+    ($macro_id:tt [$first:tt $($rest:tt)*] $($reversed:tt)*) => {
+        apply_args_reverse!($macro_id [$($rest)*] $first $($reversed)*)
+    };
+    // Entry point, use brackets to recursively reverse above.
+    ($macro_id:tt, $($t:tt)*) => {
+        apply_args_reverse!($macro_id [ $($t)* ])
+    };
+}
+
+use apply_args_reverse;
+use typenum_list_inner;
 
 // The functions below are written in recursively-functional and immutable way
 // to model the properties and restrictions of type-level computations in Rust
