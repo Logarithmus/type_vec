@@ -1,19 +1,43 @@
-use const_default::ConstDefault;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+//! ## typelist
+//! Type-level sortable singly linked list
+//!
+//! ### Motivation
+//! The main purpose is to represent composite units in [`typeunits`](https://github.com/Logarithmus/typeunits)
+//!
+//! Because Rust lacks variadic generics, the list is implemented as a recursively nested tuple.
+//!
+//! This is similar to `typenum::TArr`, but `typelist` produces much shorter types in compilation errors:
+//! ```rust
+//! type List1 = (((() Const<1>), Const<2>), Const<3>)
+//! type List2 = TArr<TArr<TArr<ATerm, Const<1>>, Const<2>>, Const<3>>;
+//! ```
+//!
+//! ### Features
+//! - [x] merge sort
+//! - [x] minimum
+//! - [x] maximum
+//! - [x] concatenation
+//! - [x] push
+//! - [x] pop
+//! - [ ] `typenum_list![..]` macro for `typenum_alias::Const<N>` list construction
+//!       (TODO: fix reversed order)
+
+use std::ops::{Add, Div};
 use typenum::{
-    consts::*,
-    private::{InternalMarker, IsGreaterPrivate, PrivateIntegerAdd, PrivateIntegerAddOut},
-    Bit, Cmp, Compare, Diff, Gr, Integer, Max, Maximum, Min, Minimum, Negate, NonZero, PInt, Prod,
-    Quot, Sum, Unsigned, B0, B1,
+    private::{IsGreaterPrivate, PrivateIntegerAdd, PrivateIntegerAddOut},
+    Bit, NonZero, PInt, Unsigned,
 };
+use typenum_alias::{consts::*, operator_aliases::*, type_operators::*, Const};
 
 #[rustfmt::skip]
-type A = typenum_array![5, 3, -2, 1, 2, 1, 2, 3, 4];
+type A = typenum_alias_list![5, 3, -2, 1, 2, 1, 2, 3, 4];
 type B = MergeSorted<A>;
 
 fn same<T: Same<()>>() {}
 
 fn sample_text() {
+    // this deliberately fails to compile
+    // to see the type of `B` in compilation errors
     same::<B>();
 }
 
@@ -298,124 +322,15 @@ where
     type Output = Sum<Len<Rest>, P1>;
 }
 
-pub trait ToTypenum {
-    type Typenum: Integer;
-}
-
-pub type Typenum<N> = <N as ToTypenum>::Typenum;
-
-pub trait ToConst {
-    type Const;
-}
-
-pub type Constant<T> = <T as ToConst>::Const;
-
-#[derive(Clone, Copy)]
-pub struct Const<const N: i8>;
-
-impl<const N: i8> ConstDefault for Const<N> {
-    const DEFAULT: Self = Self;
-}
-
-macro_rules! num_to_typenum_and_back {
-    ($($const:literal <-> $typenum:ident,)+) => {
-        $(impl ToTypenum for Const<$const> {
-            type Typenum = $typenum;
-        }
-
-        impl ToConst for $typenum {
-            type Const = Const<$const>;
-        })+
-    };
-}
-
-num_to_typenum_and_back! {
-  -10 <-> N10,
-   -9 <-> N9,
-   -8 <-> N8,
-   -7 <-> N7,
-   -6 <-> N6,
-   -5 <-> N5,
-   -4 <-> N4,
-   -3 <-> N3,
-   -2 <-> N2,
-   -1 <-> N1,
-    0 <-> Z0,
-    1 <-> P1,
-    2 <-> P2,
-    3 <-> P3,
-    4 <-> P4,
-    5 <-> P5,
-    6 <-> P6,
-    7 <-> P7,
-    8 <-> P8,
-    9 <-> P9,
-   10 <-> P10,
-}
-
-macro_rules! impl_binary_ops_for_num {
-    ($(($op:ident, $fun:ident, $out:ident),)+) => {
-        $(impl<const L: i8, const R: i8> $op<Const<R>> for Const<L>
-        where
-            Const<L>: ToTypenum,
-            Const<R>: ToTypenum,
-            Typenum<Const<L>>: $op<Typenum<Const<R>>>,
-            $out<Typenum<Const<L>>, Typenum<Const<R>>>: ToConst,
-            Constant<$out<Typenum<Const<L>>, Typenum<Const<R>>>>: ConstDefault,
-        {
-            type Output = Constant<$out<Typenum<Const<L>>, Typenum<Const<R>>>>;
-
-            fn $fun(self, _: Const<R>) -> Self::Output {
-                Self::Output::DEFAULT
-            }
-        })+
-    };
-}
-
-impl_binary_ops_for_num! {
-    (Add, add, Sum),
-    (Sub, sub, Diff),
-    (Mul, mul, Prod),
-    (Div, div, Quot),
-}
-
-impl<const N: i8> Neg for Const<N>
-where
-    Const<N>: ToTypenum,
-    Typenum<Const<N>>: Neg,
-    Negate<Typenum<Const<N>>>: ToConst,
-    Constant<Negate<Typenum<Const<N>>>>: ConstDefault,
-{
-    type Output = Constant<Negate<Typenum<Const<N>>>>;
-
-    fn neg(self) -> Self::Output {
-        Self::Output::DEFAULT
-    }
-}
-
-impl<const L: i8, const R: i8> Cmp<Const<R>> for Const<L>
-where
-    Const<L>: ToTypenum,
-    Const<R>: ToTypenum,
-    Typenum<Const<L>>: Cmp<Typenum<Const<R>>>,
-    Compare<Typenum<Const<L>>, Typenum<Const<R>>>: Default,
-{
-    type Output = Compare<Typenum<Const<L>>, Typenum<Const<R>>>;
-
-    fn compare<IM: InternalMarker>(&self, _: &Const<R>) -> Self::Output {
-        Default::default()
-    }
-}
-
-macro_rules! typenum_array {
+macro_rules! typenum_alias_list {
     ($num:literal) => {
         ((), Const<$num>)
     };
     ($($array:literal),+) => {
-        typenum_array!($($array)+)
+        typenum_alias_list!($($array)+)
     };
     ($first:literal $($rest:literal)*) => {
-        (typenum_array!($($rest)*), Const<$first>)
+        (typenum_alias_list!($($rest)*), Const<$first>)
     };
     () => {
         ()
@@ -434,7 +349,7 @@ macro_rules! _reverse {
     };
 }
 
-use typenum_array;
+use typenum_alias_list;
 
 // The functions below are written in recursively-functional and immutable way
 // to model the properties and restrictions of type-level computations in Rust

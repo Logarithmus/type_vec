@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 typenum = "1.15.0"
+typenum_alias = { git = "https://github.com/Logarithmus/typenum_alias" }
