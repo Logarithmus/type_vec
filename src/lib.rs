@@ -8,14 +8,13 @@ use typenum::{
 };
 
 #[rustfmt::skip]
-type A = ((((((((((), Const<5>), Const<3>), Const<-2>), Const<1>), Const<2>), Const<1>), Const<2>), Const<3>), Const<4>);
-type B = typenum_array![5, 3, -2, 1, 2, 1, 2, 3, 4];
-type C = MergeSorted<A>;
+type A = typenum_array![5, 3, -2, 1, 2, 1, 2, 3, 4];
+type B = MergeSorted<A>;
 
 fn same<T: Same<()>>() {}
 
 fn sample_text() {
-    same::<C>();
+    same::<B>();
 }
 
 trait Concatenate<R> {
